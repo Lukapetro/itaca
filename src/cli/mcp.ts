@@ -102,8 +102,12 @@ export function buildServer(): McpServer {
 
 export async function run(_args: string[], _json: boolean): Promise<number> {
   const server = buildServer()
+  // Resolve when the client closes the pipe, so the process exits cleanly
+  // instead of lingering across Claude Code session restarts.
+  const closed = new Promise<void>((resolve) => {
+    server.server.onclose = resolve
+  })
   await server.connect(new StdioServerTransport())
-  // Serve until the client closes the pipe.
-  await new Promise(() => {})
+  await closed
   return EXIT.OK
 }

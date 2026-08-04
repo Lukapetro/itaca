@@ -80,6 +80,18 @@ describe("mcp server", () => {
     expect(textOf(result)).not.toContain("sk_test_FAKEFIXTUREVALUE")
   })
 
+  test("server lifecycle: onclose fires when the transport closes (Greptile P1)", async () => {
+    const server = buildServer()
+    const closed = new Promise<void>((resolve) => {
+      server.server.onclose = resolve
+    })
+    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair()
+    const client = new Client({ name: "test", version: "0.0.0" })
+    await Promise.all([client.connect(clientTransport), server.connect(serverTransport)])
+    await client.close()
+    await closed // hangs the test (5s timeout) if shutdown is broken
+  })
+
   test("project_status_update with nothing to set errors", async () => {
     const client = await connectedClient()
     const result = (await client.callTool({
