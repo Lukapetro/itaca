@@ -1,0 +1,14 @@
+# Detector rule: Neon (serverless Postgres)
+# Reference rule — the format is specified in SPEC.md §6.1.
+id: neon
+service: Neon
+category: database
+match:
+  any:
+    - env_value: "\\.neon\\.tech"
+    - dep: "@neondatabase/serverless"
+    - dep: "@neondatabase/api-client"
+links:
+  - title: Neon Console
+    url: "https://console.neon.tech"
+notes: "Postgres. Connection string in DATABASE_URL."

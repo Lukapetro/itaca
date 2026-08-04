@@ -1,0 +1,48 @@
+{
+  "name": "@itacajs/cli",
+  "version": "0.0.1",
+  "publishConfig": {
+    "access": "public"
+  },
+  "description": "A local-first registry of every project on your machine, exposed to your coding agents via MCP.",
+  "keywords": [
+    "cli",
+    "mcp",
+    "agents",
+    "claude-code",
+    "project-registry",
+    "developer-tools"
+  ],
+  "license": "MIT",
+  "author": "Luca Petrolati",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Lukapetro/itaca.git"
+  },
+  "type": "module",
+  "bin": {
+    "itaca": "bin/itaca.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "rules",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "dev": "bun run src/index.ts",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write ."
+  },
+  "engines": {
+    "bun": ">=1.3.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.6",
+    "bun-types": "^1.3.14",
+    "typescript": "^7.0.2"
+  }
+}
