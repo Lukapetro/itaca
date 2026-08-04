@@ -52,42 +52,57 @@ export async function detectStack(ev: Evidence): Promise<ProjectStack> {
   return stack
 }
 
-/** Resolve workspace globs to member directory names; raw globs as fallback. */
-function resolveMembers(root: string, globs: string[], ev: Evidence): string[] {
+/**
+ * Resolve workspace globs to member directory names; raw include globs as
+ * fallback. Negated patterns ("!packages/test") remove matching members, per
+ * npm/pnpm workspace semantics. Exported for tests.
+ */
+export function resolveMembers(globs: string[], ev: Evidence): string[] {
+  const includes = globs.filter((g) => !g.startsWith("!"))
+  const excludes = globs.filter((g) => g.startsWith("!")).map((g) => g.slice(1).replace(/\/$/, ""))
   const members = new Set<string>()
-  for (const glob of globs) {
+  for (const glob of includes) {
     const asPkg = glob.endsWith("/") ? `${glob}package.json` : `${glob}/package.json`
     const matcher = new Bun.Glob(asPkg)
     for (const f of ev.files()) {
       if (matcher.match(f)) members.add(f.slice(0, -"/package.json".length))
     }
   }
-  return members.size ? [...members].sort() : globs
+  for (const pattern of excludes) {
+    const matcher = new Bun.Glob(pattern)
+    for (const member of members) {
+      if (member === pattern || matcher.match(member)) members.delete(member)
+    }
+  }
+  return members.size ? [...members].sort() : includes
 }
 
 /** Workspace member names if the repo root is a monorepo (SPEC §6.4). */
 export async function detectWorkspaces(root: string, ev: Evidence): Promise<string[] | undefined> {
+  // turbo.json alone implies a monorepo even when workspaces are undeclared
+  // or package.json is unreadable.
+  const turboFallback = () => (ev.hasFile("turbo.json") ? [] : undefined)
+
   if (ev.hasFile("pnpm-workspace.yaml")) {
     try {
       const { parse } = await import("yaml")
       const raw = parse(await Bun.file(join(root, "pnpm-workspace.yaml")).text()) as {
         packages?: string[]
       }
-      if (raw?.packages?.length) return resolveMembers(root, raw.packages, ev)
+      if (raw?.packages?.length) return resolveMembers(raw.packages, ev)
     } catch {
-      return undefined
+      return turboFallback()
     }
   }
-  if (!ev.hasFile("package.json")) return undefined
+  if (!ev.hasFile("package.json")) return turboFallback()
   try {
     const pkg = (await Bun.file(join(root, "package.json")).json()) as {
       workspaces?: string[] | { packages?: string[] }
     }
     const ws = Array.isArray(pkg.workspaces) ? pkg.workspaces : pkg.workspaces?.packages
-    if (ws?.length) return resolveMembers(root, ws, ev)
-    // turbo.json alone implies a monorepo even when workspaces live elsewhere
-    return ev.hasFile("turbo.json") ? [] : undefined
+    if (ws?.length) return resolveMembers(ws, ev)
+    return turboFallback()
   } catch {
-    return undefined
+    return turboFallback()
   }
 }
