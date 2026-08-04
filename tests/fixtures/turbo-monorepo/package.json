@@ -1,0 +1,13 @@
+{
+  "name": "fixture-turbo-monorepo",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build"
+  },
+  "devDependencies": {
+    "turbo": "^2.0.0"
+  }
+}

@@ -1,0 +1,10 @@
+id: resend
+service: Resend
+category: email
+match:
+  any:
+    - dep: resend
+    - env_key: "^RESEND_"
+links:
+  - title: Resend Dashboard
+    url: "https://resend.com/overview"

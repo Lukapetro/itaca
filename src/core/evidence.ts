@@ -46,8 +46,12 @@ export class Evidence {
     return out
   }
 
+  /** Non-glob patterns match at the repo root or nested (monorepo members). */
   hasFile(pattern: string): boolean {
-    if (!/[*?[\]{}]/.test(pattern)) return this.files().includes(pattern)
+    if (!/[*?[\]{}]/.test(pattern)) {
+      const suffix = `/${pattern}`
+      return this.files().some((f) => f === pattern || f.endsWith(suffix))
+    }
     const glob = new Bun.Glob(pattern)
     return this.files().some((f) => glob.match(f))
   }
@@ -122,7 +126,10 @@ export class Evidence {
   async contentMatches(file: string, pattern: string): Promise<boolean> {
     if (!this.contentCache.has(file)) {
       const glob = /[*?[\]{}]/.test(file) ? new Bun.Glob(file) : undefined
-      const candidates = this.files().filter((f) => (glob ? glob.match(f) : f === file))
+      const suffix = `/${file}`
+      const candidates = this.files().filter((f) =>
+        glob ? glob.match(f) : f === file || f.endsWith(suffix),
+      )
       const texts: string[] = []
       for (const rel of candidates) {
         try {

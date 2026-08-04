@@ -1,0 +1,7 @@
+{
+  "name": "@fixture/web",
+  "dependencies": {
+    "next": "^15.0.0",
+    "@clerk/nextjs": "^6.0.0"
+  }
+}

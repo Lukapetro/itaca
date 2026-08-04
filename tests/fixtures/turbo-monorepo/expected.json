@@ -1,0 +1,5 @@
+{
+  "services": ["clerk", "cloudflare"],
+  "stack": { "runtime": "bun", "framework": "next" },
+  "workspaces": ["apps/web", "apps/worker"]
+}

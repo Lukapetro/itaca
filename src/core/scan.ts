@@ -1,4 +1,4 @@
-import { type Dirent, readdirSync } from "node:fs"
+import { type Dirent, readdirSync, statSync } from "node:fs"
 import { basename, join, resolve } from "node:path"
 import type { DetectorRule, Link, Project, Registry } from "../types.ts"
 import { extractCommands } from "./commands.ts"
@@ -37,7 +37,19 @@ export function discoverProjects(root: string): string[] {
     return []
   }
   return entries
-    .filter((e) => e.isDirectory() && !e.name.startsWith(".") && isProjectDir(join(abs, e.name)))
+    .filter((e) => {
+      if (e.name.startsWith(".")) return false
+      // stat-follow so symlinked project dirs are discovered (top level only —
+      // the depth-capped walk keeps symlink loops bounded)
+      if (!e.isDirectory() && !e.isSymbolicLink()) return false
+      const path = join(abs, e.name)
+      try {
+        if (!statSync(path).isDirectory()) return false
+      } catch {
+        return false
+      }
+      return isProjectDir(path)
+    })
     .map((e) => join(abs, e.name))
     .sort()
 }

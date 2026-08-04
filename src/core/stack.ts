@@ -52,7 +52,20 @@ export async function detectStack(ev: Evidence): Promise<ProjectStack> {
   return stack
 }
 
-/** Workspace globs if the repo root is a monorepo. */
+/** Resolve workspace globs to member directory names; raw globs as fallback. */
+function resolveMembers(root: string, globs: string[], ev: Evidence): string[] {
+  const members = new Set<string>()
+  for (const glob of globs) {
+    const asPkg = glob.endsWith("/") ? `${glob}package.json` : `${glob}/package.json`
+    const matcher = new Bun.Glob(asPkg)
+    for (const f of ev.files()) {
+      if (matcher.match(f)) members.add(f.slice(0, -"/package.json".length))
+    }
+  }
+  return members.size ? [...members].sort() : globs
+}
+
+/** Workspace member names if the repo root is a monorepo (SPEC §6.4). */
 export async function detectWorkspaces(root: string, ev: Evidence): Promise<string[] | undefined> {
   if (ev.hasFile("pnpm-workspace.yaml")) {
     try {
@@ -60,7 +73,7 @@ export async function detectWorkspaces(root: string, ev: Evidence): Promise<stri
       const raw = parse(await Bun.file(join(root, "pnpm-workspace.yaml")).text()) as {
         packages?: string[]
       }
-      if (raw?.packages?.length) return raw.packages
+      if (raw?.packages?.length) return resolveMembers(root, raw.packages, ev)
     } catch {
       return undefined
     }
@@ -71,7 +84,9 @@ export async function detectWorkspaces(root: string, ev: Evidence): Promise<stri
       workspaces?: string[] | { packages?: string[] }
     }
     const ws = Array.isArray(pkg.workspaces) ? pkg.workspaces : pkg.workspaces?.packages
-    return ws?.length ? ws : undefined
+    if (ws?.length) return resolveMembers(root, ws, ev)
+    // turbo.json alone implies a monorepo even when workspaces live elsewhere
+    return ev.hasFile("turbo.json") ? [] : undefined
   } catch {
     return undefined
   }
