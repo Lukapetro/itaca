@@ -29,6 +29,18 @@ describe("workspace resolution (bugbot findings)", () => {
     expect(await detectWorkspaces(bare, new Evidence(bare))).toEqual([])
   })
 
+  test("a NESTED pnpm-workspace.yaml does not hijack root package.json workspaces", async () => {
+    const repo = mkdtempSync(join(tmpdir(), "itaca-pnpm-nested-"))
+    writeFileSync(
+      join(repo, "package.json"),
+      JSON.stringify({ name: "root", workspaces: ["packs/*"] }),
+    )
+    mkdirSync(join(repo, "packs", "a"), { recursive: true })
+    writeFileSync(join(repo, "packs", "a", "package.json"), JSON.stringify({ name: "a" }))
+    writeFileSync(join(repo, "packs", "a", "pnpm-workspace.yaml"), "packages: ['x/*']\n")
+    expect(await detectWorkspaces(repo, new Evidence(repo))).toEqual(["packs/a"])
+  })
+
   test("a NESTED turbo.json does not reclassify an ordinary repo as monorepo", async () => {
     const repo = mkdtempSync(join(tmpdir(), "itaca-turbo-nested-"))
     writeFileSync(join(repo, "package.json"), JSON.stringify({ name: "ordinary" }))

@@ -84,7 +84,9 @@ export async function detectWorkspaces(root: string, ev: Evidence): Promise<stri
   // recursive, and a nested turbo.json must not reclassify an ordinary repo.
   const turboFallback = () => (ev.files().includes("turbo.json") ? [] : undefined)
 
-  if (ev.hasFile("pnpm-workspace.yaml")) {
+  // Root-only check: a nested pnpm-workspace.yaml must not hijack this branch
+  // away from the root package.json workspaces (hasFile is recursive).
+  if (ev.files().includes("pnpm-workspace.yaml")) {
     try {
       const { parse } = await import("yaml")
       const raw = parse(await Bun.file(join(root, "pnpm-workspace.yaml")).text()) as {
