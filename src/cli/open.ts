@@ -4,11 +4,20 @@ import { cyan, dim, fail, table } from "../ui.ts"
 
 /**
  * Links can come from a cloned repo's committed itaca.yml, so they are
- * untrusted input: only plain http(s) URLs may reach the browser command,
- * and never anything that could parse as an option flag.
+ * untrusted input. HTTPS only — except plain-http to the loopback host,
+ * which covers local dashboards without opening a MITM-modifiable channel.
  */
-function safeUrl(url: string): boolean {
-  return /^https?:\/\//.test(url) && !url.startsWith("-")
+export function safeUrl(url: string): boolean {
+  let parsed: URL
+  try {
+    parsed = new URL(url)
+  } catch {
+    return false
+  }
+  if (parsed.protocol === "https:") return true
+  return (
+    parsed.protocol === "http:" && ["localhost", "127.0.0.1", "[::1]"].includes(parsed.hostname)
+  )
 }
 
 async function openUrl(url: string): Promise<void> {

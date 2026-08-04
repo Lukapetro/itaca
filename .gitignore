@@ -3,4 +3,6 @@ dist/
 *.log
 .env
 .env.*
+# fixture env files are fake by construction and required by CI
+!tests/fixtures/**/.env*
 .DS_Store
