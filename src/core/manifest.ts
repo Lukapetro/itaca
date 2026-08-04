@@ -1,6 +1,7 @@
 import { join } from "node:path"
 import { parse, stringify } from "yaml"
 import type { Manifest } from "../types.ts"
+import { writeAtomic } from "./paths.ts"
 
 export const MANIFEST_FILE = "itaca.yml"
 export const SCHEMA_HEADER =
@@ -23,7 +24,7 @@ export async function readManifest(root: string): Promise<Manifest | undefined> 
 }
 
 export async function writeManifest(root: string, manifest: Manifest): Promise<void> {
-  await Bun.write(manifestPath(root), `${SCHEMA_HEADER}\n${stringify(manifest)}`)
+  await writeAtomic(manifestPath(root), `${SCHEMA_HEADER}\n${stringify(manifest)}`)
 }
 
 const LOG_CAP = 20

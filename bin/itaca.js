@@ -1,15 +1,15 @@
 #!/usr/bin/env node
-// itaca — pre-alpha placeholder. Node-compatible shim so `npx @itaca/cli`
-// works everywhere; the real CLI (src/) runs on Bun and lands with M1.
-const VERSION = "0.0.1"
+// Node shim: the real CLI runs on Bun. This makes `npx @itacajs/cli` work
+// from any Node environment, with a clear message when Bun is missing.
+import { spawnSync } from "node:child_process"
+import { fileURLToPath } from "node:url"
 
-const args = process.argv.slice(2)
-if (args.includes("--version") || args.includes("-v")) {
-  console.log(VERSION)
-  process.exit(0)
+const entry = fileURLToPath(new URL("../src/index.ts", import.meta.url))
+const result = spawnSync("bun", [entry, ...process.argv.slice(2)], { stdio: "inherit" })
+
+if (result.error && result.error.code === "ENOENT") {
+  console.error("itaca requires Bun. Install it (https://bun.sh) and retry:")
+  console.error("  curl -fsSL https://bun.sh/install | bash")
+  process.exit(1)
 }
-
-console.log(`itaca ${VERSION} — pre-alpha.`)
-console.log("Every project is an Ithaca. Come home in seconds.")
-console.log("Spec & progress: https://github.com/Lukapetro/itaca")
-process.exit(0)
+process.exit(result.status ?? 1)

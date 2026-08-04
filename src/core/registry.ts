@@ -1,5 +1,5 @@
 import type { Project, Registry } from "../types.ts"
-import { registryPath } from "./paths.ts"
+import { registryPath, writeAtomic } from "./paths.ts"
 
 export async function readRegistry(): Promise<Registry | undefined> {
   const file = Bun.file(registryPath())
@@ -12,7 +12,7 @@ export async function readRegistry(): Promise<Registry | undefined> {
 }
 
 export async function writeRegistry(registry: Registry): Promise<void> {
-  await Bun.write(registryPath(), `${JSON.stringify(registry, null, 2)}\n`)
+  await writeAtomic(registryPath(), `${JSON.stringify(registry, null, 2)}\n`)
 }
 
 export function findProject(registry: Registry, name: string): Project | undefined {
@@ -20,7 +20,9 @@ export function findProject(registry: Registry, name: string): Project | undefin
   return registry.projects.find((p) => p.name.toLowerCase() === lower)
 }
 
-/** Find the registered project containing the given directory. */
+/** Find the registered project containing the given directory (innermost wins). */
 export function projectForCwd(registry: Registry, cwd: string): Project | undefined {
-  return registry.projects.find((p) => cwd === p.path || cwd.startsWith(`${p.path}/`))
+  return registry.projects
+    .filter((p) => cwd === p.path || cwd.startsWith(`${p.path}/`))
+    .sort((a, b) => b.path.length - a.path.length)[0]
 }

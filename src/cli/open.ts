@@ -1,6 +1,24 @@
 import { findProject, readRegistry } from "../core/registry.ts"
 import { EXIT } from "../types.ts"
-import { cyan, dim, fail } from "../ui.ts"
+import { cyan, dim, fail, table } from "../ui.ts"
+
+/**
+ * Links can come from a cloned repo's committed itaca.yml, so they are
+ * untrusted input. HTTPS only — except plain-http to the loopback host,
+ * which covers local dashboards without opening a MITM-modifiable channel.
+ */
+export function safeUrl(url: string): boolean {
+  let parsed: URL
+  try {
+    parsed = new URL(url)
+  } catch {
+    return false
+  }
+  if (parsed.protocol === "https:") return true
+  return (
+    parsed.protocol === "http:" && ["localhost", "127.0.0.1", "[::1]"].includes(parsed.hostname)
+  )
+}
 
 async function openUrl(url: string): Promise<void> {
   const browser = process.env.BROWSER
@@ -15,10 +33,14 @@ async function openUrl(url: string): Promise<void> {
 }
 
 export async function run(args: string[], json: boolean): Promise<number> {
+  const all = args.includes("--all")
   const [name, linkFilter] = args.filter((a) => !a.startsWith("-"))
   if (!name) {
     fail(
-      { code: "missing_argument", message: "which project? usage: itaca open <project> [link]" },
+      {
+        code: "missing_argument",
+        message: "which project? usage: itaca open <project> [link|--all]",
+      },
       json,
     )
     return EXIT.USAGE
@@ -36,7 +58,13 @@ export async function run(args: string[], json: boolean): Promise<number> {
   const links = [
     ...project.services.flatMap((s) => s.links.map((l) => ({ ...l, service: s.service }))),
     ...(project.manifest?.links ?? []).map((l) => ({ ...l, service: "manual" })),
-  ]
+  ].filter((l) => safeUrl(l.url))
+
+  if (!links.length) {
+    fail({ code: "no_links", message: `no links for ${name}` }, json)
+    return EXIT.NOT_FOUND
+  }
+
   const filtered = linkFilter
     ? links.filter(
         (l) =>
@@ -46,15 +74,23 @@ export async function run(args: string[], json: boolean): Promise<number> {
     : links
 
   if (!filtered.length) {
-    fail(
-      {
-        code: "no_links",
-        message: `no links${linkFilter ? ` matching "${linkFilter}"` : ""} for ${name}`,
-      },
-      json,
-    )
+    fail({ code: "no_links", message: `no links matching "${linkFilter}" for ${name}` }, json)
     return EXIT.NOT_FOUND
   }
+
+  // No filter and no --all: show the pick list, open nothing (SPEC §7).
+  if (!linkFilter && !all && filtered.length > 1) {
+    if (json) {
+      console.log(JSON.stringify({ links: filtered, opened: [] }))
+    } else {
+      console.log(table(filtered.map((l) => [cyan(l.service), l.title, dim(l.url)])))
+      console.log(
+        dim(`\nopen one: itaca open ${name} <filter> · open all: itaca open ${name} --all`),
+      )
+    }
+    return EXIT.OK
+  }
+
   for (const link of filtered) await openUrl(link.url)
   if (json) {
     console.log(JSON.stringify({ opened: filtered.map((l) => l.url) }))

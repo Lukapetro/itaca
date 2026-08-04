@@ -19,4 +19,14 @@ describe("privacy invariant", () => {
     // the detection itself must still work off those values
     expect(project.services.map((s) => s.id)).toContain("neon")
   })
+
+  test("env values never appear in the briefing either", async () => {
+    const dir = join(import.meta.dir, "fixtures", "next-neon-stripe")
+    const { rules } = loadRules()
+    const project = await scanProject(dir, rules)
+    const { briefing } = await import("../src/core/briefing.ts")
+    const text = briefing(project, { version: 1, scannedAt: "", roots: [], projects: [project] })
+    expect(text).not.toContain("hunter2-not-a-real-secret")
+    expect(text).not.toContain("sk_test_FAKEFIXTUREVALUE")
+  })
 })
