@@ -1,0 +1,33 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+concurrency: ${{ github.workflow }}-${{ github.ref }}
+
+permissions:
+  contents: write
+  pull-requests: write
+  id-token: write # OIDC for npm Trusted Publishing (provenance included)
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      # npm >= 11.5.1 required for OIDC Trusted Publishing; node 24 ships it
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: bun install --frozen-lockfile
+      - name: Create release PR or publish
+        uses: changesets/action@v2
+        with:
+          publish-script: bun run release
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          create-github-releases: true
+          push-git-tags: true
