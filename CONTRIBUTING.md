@@ -27,7 +27,9 @@ Checklist for a rule PR:
 
 1. Real evidence only — prefer `dep`/`file` over broad env regexes; a rule that
    fires on unrelated repos is worse than no rule.
-2. `bunx itaca rules validate` passes (regexes are compiled and checked).
+2. `bun run dev -- rules validate` passes from your checkout (regexes are
+   compiled and checked — this validates *your* rules/, not the published
+   package's copy).
 3. Add a fixture case if the match logic is non-obvious: a minimal fake repo
    under `tests/fixtures/` plus its `expected.json`.
 4. One rule per PR, `feat(rules): add railway` as the title, plus a changeset
