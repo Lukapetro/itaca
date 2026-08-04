@@ -80,8 +80,9 @@ export function resolveMembers(globs: string[], ev: Evidence): string[] {
 /** Workspace member names if the repo root is a monorepo (SPEC §6.4). */
 export async function detectWorkspaces(root: string, ev: Evidence): Promise<string[] | undefined> {
   // turbo.json alone implies a monorepo even when workspaces are undeclared
-  // or package.json is unreadable.
-  const turboFallback = () => (ev.hasFile("turbo.json") ? [] : undefined)
+  // or package.json is unreadable — but only at the repo ROOT: hasFile is
+  // recursive, and a nested turbo.json must not reclassify an ordinary repo.
+  const turboFallback = () => (ev.files().includes("turbo.json") ? [] : undefined)
 
   if (ev.hasFile("pnpm-workspace.yaml")) {
     try {

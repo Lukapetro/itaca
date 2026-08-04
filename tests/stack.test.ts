@@ -28,4 +28,12 @@ describe("workspace resolution (bugbot findings)", () => {
     writeFileSync(join(bare, "turbo.json"), "{}")
     expect(await detectWorkspaces(bare, new Evidence(bare))).toEqual([])
   })
+
+  test("a NESTED turbo.json does not reclassify an ordinary repo as monorepo", async () => {
+    const repo = mkdtempSync(join(tmpdir(), "itaca-turbo-nested-"))
+    writeFileSync(join(repo, "package.json"), JSON.stringify({ name: "ordinary" }))
+    mkdirSync(join(repo, "vendor", "example"), { recursive: true })
+    writeFileSync(join(repo, "vendor", "example", "turbo.json"), "{}")
+    expect(await detectWorkspaces(repo, new Evidence(repo))).toBeUndefined()
+  })
 })
