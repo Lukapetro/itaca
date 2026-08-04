@@ -51,7 +51,7 @@ Usage
   itaca scan [dir]            first run: itaca scan ~/dev
   itaca list                  what's on this machine
   itaca context               where was I? (run inside a project)
-  itaca open <project>        open its dashboards
+  itaca open <project>        list its dashboards (add <filter> or --all to open)
   itaca show <project>
   itaca status set <project> [--phase X] [--next Y] [--note Z]
   itaca init | rules list | rules validate

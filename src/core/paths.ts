@@ -1,6 +1,14 @@
+import { renameSync } from "node:fs"
 import { homedir } from "node:os"
 import { join } from "node:path"
 import { parse, stringify } from "yaml"
+
+/** Crash-safe write: temp file in the same directory, then atomic rename. */
+export async function writeAtomic(path: string, content: string): Promise<void> {
+  const tmp = `${path}.tmp-${process.pid}`
+  await Bun.write(tmp, content)
+  renameSync(tmp, path)
+}
 
 export function configDir(): string {
   return join(process.env.XDG_CONFIG_HOME ?? join(homedir(), ".config"), "itaca")
@@ -30,7 +38,7 @@ export async function readConfig(): Promise<Config> {
 }
 
 export async function writeConfig(config: Config): Promise<void> {
-  await Bun.write(configPath(), stringify(config))
+  await writeAtomic(configPath(), stringify(config))
 }
 
 /** Add a root persistently; returns the updated config. */

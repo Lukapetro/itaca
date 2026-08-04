@@ -92,10 +92,14 @@ export async function scanProject(path: string, rules: DetectorRule[]): Promise<
   }
 }
 
-export async function scanRoots(roots: string[], now: string): Promise<Registry> {
-  const { rules } = loadRules()
+export async function scanRoots(
+  roots: string[],
+  now: string,
+  rules?: DetectorRule[],
+): Promise<Registry> {
+  const resolvedRules = rules ?? loadRules().rules
   const paths = [...new Set(roots.flatMap((r) => discoverProjects(r)))]
-  const projects = await Promise.all(paths.map((p) => scanProject(p, rules)))
+  const projects = await Promise.all(paths.map((p) => scanProject(p, resolvedRules)))
   projects.sort((a, b) => (b.git?.lastCommitAt ?? "").localeCompare(a.git?.lastCommitAt ?? ""))
   return { version: 1, scannedAt: now, roots: roots.map((r) => resolve(r)), projects }
 }

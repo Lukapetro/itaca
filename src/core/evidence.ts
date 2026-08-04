@@ -98,8 +98,10 @@ export class Evidence {
       for (const line of text.split("\n")) {
         const m = line.match(/^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$/)
         if (m?.[1] !== undefined && m[2] !== undefined) {
-          keys.push(m[1])
-          values.push(m[2].replace(/^["']|["']\s*$/g, ""))
+          // Length caps bound regex work on attacker-controlled values (ReDoS):
+          // legitimate service-URL matching never needs more than this.
+          keys.push(m[1].slice(0, 256))
+          values.push(m[2].replace(/^["']|["']\s*$/g, "").slice(0, 1024))
         }
       }
     }
@@ -119,18 +121,18 @@ export class Evidence {
 
   async contentMatches(file: string, pattern: string): Promise<boolean> {
     if (!this.contentCache.has(file)) {
-      const candidates = this.hasFile(file)
-        ? this.files().filter((f) => (f === file ? true : new Bun.Glob(file).match(f)))
-        : []
-      let text: string | null = null
+      const glob = /[*?[\]{}]/.test(file) ? new Bun.Glob(file) : undefined
+      const candidates = this.files().filter((f) => (glob ? glob.match(f) : f === file))
+      const texts: string[] = []
       for (const rel of candidates) {
         try {
-          text = (text ?? "") + (await Bun.file(join(this.root, rel)).text())
+          texts.push(await Bun.file(join(this.root, rel)).text())
         } catch {
           // unreadable — skip
         }
       }
-      this.contentCache.set(file, text)
+      // Joined with \n so a pattern can never straddle two files.
+      this.contentCache.set(file, texts.length ? texts.join("\n") : null)
     }
     const text = this.contentCache.get(file)
     return text != null && new RegExp(pattern, "m").test(text)

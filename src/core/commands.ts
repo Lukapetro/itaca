@@ -27,8 +27,7 @@ export async function extractCommands(
   } catch {
     return []
   }
-  const runner =
-    stack.packageManager === "bun" ? "bun run" : (stack.packageManager ?? "npm") + " run"
+  const runner = stack.packageManager === "bun" ? "bun run" : `${stack.packageManager ?? "npm"} run`
   const names = Object.keys(scripts)
   names.sort((a, b) => {
     const ia = COMMAND_ORDER.indexOf(a)

@@ -14,9 +14,20 @@ export async function gitInfo(root: string): Promise<GitInfo | undefined> {
 
   const remote = await $`git -C ${root} remote get-url origin`.quiet().nothrow()
   if (remote.exitCode === 0) {
-    const url = remote.text().trim()
-    const m = url.match(/(?:git@|https:\/\/)([^:/]+)[:/](.+?)(?:\.git)?$/)
-    if (m?.[1] && m[2]) info.remote = `${m[1]}/${m[2]}`
+    const parsed = parseRemote(remote.text().trim())
+    if (parsed !== undefined) info.remote = parsed
   }
   return info
+}
+
+/**
+ * "host/owner/repo" from a git remote URL. Userinfo (user:token@) is stripped
+ * BEFORE parsing — credentials embedded in remotes must never reach the
+ * registry (privacy invariant, SECURITY.md).
+ */
+export function parseRemote(url: string): string | undefined {
+  const cleaned = url.replace(/\/\/[^@/]+@/, "//").replace(/^ssh:\/\//, "")
+  const m = cleaned.match(/(?:git@|https:\/\/)?([^:/@]+\.[^:/@]+)[:/](.+?)(?:\.git)?\/?$/)
+  if (!m?.[1] || !m[2] || m[2].includes("@")) return undefined
+  return `${m[1]}/${m[2]}`
 }

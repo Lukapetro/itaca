@@ -7,7 +7,7 @@ export async function run(_args: string[], json: boolean): Promise<number> {
   const cwd = process.cwd()
   if (await readManifest(cwd)) {
     fail({ code: "already_exists", message: `${manifestPath(cwd)} already exists` }, json)
-    return EXIT.FAILURE
+    return EXIT.CONFLICT
   }
   let description: string | undefined
   try {
