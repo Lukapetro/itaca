@@ -69,7 +69,31 @@ Flags
   --json     machine output on stdout (every command)
   --version  print version
 
-Exit codes: 0 ok · 1 failure · 2 usage · 3 not found`
+Exit codes: 0 ok · 1 failure · 2 usage · 3 not found · 4 permission · 5 conflict`
+
+/** Closest command by edit distance; undefined when nothing is plausibly meant. */
+function closest(input: string, commands: string[]): string | undefined {
+  const distance = (a: string, b: string): number => {
+    const row = Array.from({ length: b.length + 1 }, (_, i) => i)
+    for (let i = 1; i <= a.length; i++) {
+      let prev = row[0] as number
+      row[0] = i
+      for (let j = 1; j <= b.length; j++) {
+        const tmp = row[j] as number
+        row[j] = Math.min(
+          tmp + 1,
+          (row[j - 1] as number) + 1,
+          prev + (a[i - 1] === b[j - 1] ? 0 : 1),
+        )
+        prev = tmp
+      }
+    }
+    return row[b.length] as number
+  }
+  const ranked = commands.map((c) => ({ c, d: distance(input, c) })).sort((x, y) => x.d - y.d)
+  const best = ranked[0]
+  return best && best.d <= Math.max(2, Math.floor(input.length / 2)) ? best.c : undefined
+}
 
 async function main(): Promise<number> {
   const argv = process.argv.slice(2)
@@ -77,17 +101,17 @@ async function main(): Promise<number> {
   const args = argv.filter((a) => a !== "--json")
 
   if (args.includes("--version") || args.includes("-v")) {
-    console.log(pkg.version)
+    console.log(json ? JSON.stringify({ version: pkg.version }) : pkg.version)
     return EXIT.OK
   }
   const cmd = args[0]
   if (!cmd || cmd === "--help" || cmd === "-h" || cmd === "help") {
-    console.log(HELP)
+    console.log(json ? JSON.stringify({ help: HELP }) : HELP)
     return EXIT.OK
   }
   const entry = COMMANDS[cmd]
   if (!entry) {
-    const guess = Object.keys(COMMANDS).find((c) => c.startsWith(cmd[0] ?? ""))
+    const guess = closest(cmd, Object.keys(COMMANDS))
     fail(
       {
         code: "unknown_command",

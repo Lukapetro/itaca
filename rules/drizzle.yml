@@ -1,0 +1,11 @@
+id: drizzle
+service: Drizzle ORM
+category: database
+match:
+  any:
+    - dep: drizzle-orm
+    - file: drizzle.config.ts
+links:
+  - title: Drizzle Docs
+    url: "https://orm.drizzle.team"
+notes: "Local studio: bunx drizzle-kit studio"

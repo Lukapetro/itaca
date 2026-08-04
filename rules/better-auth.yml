@@ -1,0 +1,10 @@
+id: better-auth
+service: Better Auth
+category: auth
+match:
+  any:
+    - dep: better-auth
+    - env_key: "^BETTER_AUTH_"
+links:
+  - title: Better Auth Docs
+    url: "https://www.better-auth.com/docs"

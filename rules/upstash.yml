@@ -1,0 +1,12 @@
+id: upstash
+service: Upstash
+category: database
+match:
+  any:
+    - dep: "@upstash/redis"
+    - dep: "@upstash/ratelimit"
+    - dep: "@upstash/qstash"
+    - env_key: "^UPSTASH_"
+links:
+  - title: Upstash Console
+    url: "https://console.upstash.com"

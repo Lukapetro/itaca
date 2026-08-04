@@ -1,0 +1,13 @@
+id: clerk
+service: Clerk
+category: auth
+match:
+  any:
+    - dep: "@clerk/nextjs"
+    - dep: "@clerk/clerk-react"
+    - dep: "@clerk/clerk-expo"
+    - dep: "@clerk/backend"
+    - env_key: "^(NEXT_PUBLIC_)?CLERK_"
+links:
+  - title: Clerk Dashboard
+    url: "https://dashboard.clerk.com"

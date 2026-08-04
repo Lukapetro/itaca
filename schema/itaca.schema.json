@@ -1,0 +1,65 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://raw.githubusercontent.com/Lukapetro/itaca/main/schema/itaca.schema.json",
+  "title": "itaca.yml",
+  "description": "Per-repo itaca manifest: the durable, committable project state. Everything else is derived by `itaca scan`.",
+  "type": "object",
+  "required": ["version"],
+  "additionalProperties": false,
+  "properties": {
+    "version": { "type": "integer", "const": 1 },
+    "name": {
+      "type": "string",
+      "description": "Project name; defaults to the directory name"
+    },
+    "description": { "type": "string", "description": "One line: what this project is" },
+    "status": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Narrative state — written by you or your agents, never auto-derived",
+      "properties": {
+        "phase": { "type": "string", "description": "Where the project is, e.g. 'beta — 12 pilot users'" },
+        "next": { "type": "string", "description": "What's next, one line" },
+        "updated": { "type": "string", "format": "date", "description": "Last status update (YYYY-MM-DD)" },
+        "log": {
+          "type": "array",
+          "maxItems": 20,
+          "description": "Append-only session log, newest first",
+          "items": {
+            "type": "object",
+            "required": ["date", "note"],
+            "additionalProperties": false,
+            "properties": {
+              "date": { "type": "string", "format": "date" },
+              "note": { "type": "string", "description": "1-2 lines; never secrets or env values" }
+            }
+          }
+        }
+      }
+    },
+    "links": {
+      "type": "array",
+      "description": "Manual links merged with detected ones (e.g. services with no code footprint)",
+      "items": {
+        "type": "object",
+        "required": ["title", "url"],
+        "additionalProperties": false,
+        "properties": {
+          "title": { "type": "string" },
+          "url": { "type": "string", "format": "uri" }
+        }
+      }
+    },
+    "overrides": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "disable": {
+          "type": "array",
+          "description": "Detector rule ids to suppress (false positives)",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  }
+}

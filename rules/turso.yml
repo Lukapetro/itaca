@@ -1,0 +1,11 @@
+id: turso
+service: Turso
+category: database
+match:
+  any:
+    - dep: "@libsql/client"
+    - env_value: "\\.turso\\.io"
+    - env_key: "^TURSO_"
+links:
+  - title: Turso Dashboard
+    url: "https://app.turso.tech"
