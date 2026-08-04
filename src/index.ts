@@ -43,6 +43,14 @@ const COMMANDS: Record<
     run: (a, j) => import("./cli/rules.ts").then((m) => m.run(a, j)),
     blurb: "list or validate detector rules",
   },
+  mcp: {
+    run: (a, j) => import("./cli/mcp.ts").then((m) => m.run(a, j)),
+    blurb: "run the MCP server on stdio",
+  },
+  agent: {
+    run: (a, j) => import("./cli/agent.ts").then((m) => m.run(a, j)),
+    blurb: "install agent integration (skill, hook, MCP)",
+  },
 }
 
 const HELP = `itaca ${pkg.version} — every project is an Ithaca; come home in seconds
@@ -54,7 +62,8 @@ Usage
   itaca open <project>        list its dashboards (add <filter> or --all to open)
   itaca show <project>
   itaca status set <project> [--phase X] [--next Y] [--note Z]
-  itaca init | rules list | rules validate
+  itaca agent install         wire up Claude Code (skill + hook + MCP)
+  itaca init | rules list | rules validate | mcp
 
 Flags
   --json     machine output on stdout (every command)

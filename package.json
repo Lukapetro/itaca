@@ -50,6 +50,8 @@
     "typescript": "^7.0.2"
   },
   "dependencies": {
-    "yaml": "^2.9.0"
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "yaml": "^2.9.0",
+    "zod": "^4.4.3"
   }
 }
