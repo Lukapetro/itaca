@@ -8,12 +8,18 @@ Your agent starts a session already knowing what each project is, what stack and
 services it uses, how to run it, and where you left off — across all your repos,
 not just the current one. No cloud, no accounts, no telemetry.
 
-**Status: pre-alpha.** The full design lives in [SPEC.md](./SPEC.md).
+**Status: alpha.** The full design lives in [SPEC.md](./SPEC.md).
 
 ```sh
-# soon
-npx itaca scan
+bunx @itacajs/cli scan ~/dev    # detect every project and its services
+bunx @itacajs/cli list          # what's on this machine
+bunx @itacajs/cli context       # "where was I?" — run inside a project
+bunx @itacajs/cli open <name>   # open its dashboards in the browser
 ```
+
+Detection is declarative: each service is a small YAML rule in [rules/](./rules)
+(Neon, Convex, Cloudflare, Stripe, Polar, Vercel, Supabase, Expo, PostHog,
+Sentry, GitHub). Adding one is a 10-line PR.
 
 ## Why
 

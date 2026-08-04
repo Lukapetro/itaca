@@ -1,0 +1,11 @@
+id: posthog
+service: PostHog
+category: analytics
+match:
+  any:
+    - dep: posthog-js
+    - dep: posthog-node
+    - env_key: "POSTHOG"
+links:
+  - title: PostHog
+    url: "https://eu.posthog.com"

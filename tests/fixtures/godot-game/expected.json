@@ -1,0 +1,5 @@
+{
+  "services": [],
+  "stack": { "runtime": "bun", "framework": "godot" },
+  "workspaces": ["content", "server"]
+}

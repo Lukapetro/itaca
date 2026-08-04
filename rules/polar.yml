@@ -1,0 +1,12 @@
+id: polar
+service: Polar
+category: payments
+match:
+  any:
+    - dep: "@polar-sh/sdk"
+    - dep: "@polar-sh/nextjs"
+    - dep: "@polar-sh/checkout"
+    - env_key: "^POLAR_"
+links:
+  - title: Polar Dashboard
+    url: "https://polar.sh/dashboard"

@@ -1,0 +1,4 @@
+{
+  "services": ["neon", "stripe"],
+  "stack": { "runtime": "node", "framework": "next", "language": "typescript" }
+}

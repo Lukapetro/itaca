@@ -1,0 +1,11 @@
+id: convex
+service: Convex
+category: backend
+match:
+  any:
+    - dep: convex
+    - file: convex.json
+links:
+  - title: Convex Dashboard
+    url: "https://dashboard.convex.dev"
+notes: "Deployment URL in CONVEX_DEPLOYMENT / NEXT_PUBLIC_CONVEX_URL."

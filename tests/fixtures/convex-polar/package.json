@@ -1,0 +1,11 @@
+{
+  "name": "fixture-convex-polar",
+  "scripts": {
+    "dev": "vite dev"
+  },
+  "dependencies": {
+    "convex": "^1.17.0",
+    "@polar-sh/sdk": "^0.20.0",
+    "vite": "^6.0.0"
+  }
+}

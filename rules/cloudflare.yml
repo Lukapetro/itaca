@@ -1,0 +1,12 @@
+id: cloudflare
+service: Cloudflare
+category: hosting
+match:
+  any:
+    - file: wrangler.toml
+    - file: wrangler.jsonc
+    - dep: wrangler
+    - dep: "@cloudflare/workers-types"
+links:
+  - title: Cloudflare Dashboard
+    url: "https://dash.cloudflare.com"

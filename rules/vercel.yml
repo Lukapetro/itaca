@@ -1,0 +1,10 @@
+id: vercel
+service: Vercel
+category: hosting
+match:
+  any:
+    - file: vercel.json
+    - file: .vercel/project.json
+links:
+  - title: Vercel Dashboard
+    url: "https://vercel.com/dashboard"

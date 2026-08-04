@@ -1,0 +1,17 @@
+{
+  "name": "fixture-next-neon-stripe",
+  "description": "A Next.js SaaS on Neon with Stripe billing",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "next": "^15.0.0",
+    "@neondatabase/serverless": "^0.10.0",
+    "stripe": "^17.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}

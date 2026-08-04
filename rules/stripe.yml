@@ -1,0 +1,13 @@
+id: stripe
+service: Stripe
+category: payments
+match:
+  any:
+    - dep: stripe
+    - dep: "@stripe/stripe-js"
+    - env_key: "^STRIPE_"
+links:
+  - title: Stripe Dashboard
+    url: "https://dashboard.stripe.com"
+  - title: Stripe Webhooks
+    url: "https://dashboard.stripe.com/webhooks"

@@ -1,0 +1,13 @@
+id: sentry
+service: Sentry
+category: monitoring
+match:
+  any:
+    - dep: "@sentry/nextjs"
+    - dep: "@sentry/node"
+    - dep: "@sentry/react"
+    - dep: "@sentry/browser"
+    - env_key: "^SENTRY_"
+links:
+  - title: Sentry
+    url: "https://sentry.io"

@@ -1,0 +1,11 @@
+id: supabase
+service: Supabase
+category: database
+match:
+  any:
+    - dep: "@supabase/supabase-js"
+    - file: supabase/config.toml
+    - env_value: "\\.supabase\\.co"
+links:
+  - title: Supabase Dashboard
+    url: "https://supabase.com/dashboard"

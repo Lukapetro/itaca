@@ -1,0 +1,4 @@
+{
+  "services": ["convex", "polar"],
+  "stack": { "runtime": "bun", "framework": "vite", "language": "javascript" }
+}

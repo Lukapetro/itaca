@@ -1,0 +1,11 @@
+id: expo
+service: Expo / EAS
+category: mobile
+match:
+  any:
+    - dep: expo
+    - file: eas.json
+    - file: app.config.ts
+links:
+  - title: Expo Dashboard
+    url: "https://expo.dev/accounts"

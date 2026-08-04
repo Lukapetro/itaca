@@ -1,0 +1,4 @@
+{
+  "services": ["cloudflare"],
+  "stack": { "runtime": "node", "language": "typescript" }
+}

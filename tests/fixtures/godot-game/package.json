@@ -1,0 +1,11 @@
+{
+  "name": "fixture-godot-game",
+  "workspaces": [
+    "content",
+    "server"
+  ],
+  "scripts": {
+    "test": "bun test",
+    "export": "bun run tools/export.ts"
+  }
+}
