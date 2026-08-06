@@ -27,20 +27,28 @@ export async function headSha(root: string): Promise<string | undefined> {
 }
 
 /**
- * Commit subjects between an anchor and HEAD, newest first.
+ * Commit subjects between an anchor and HEAD, newest first. `exclude` drops
+ * commits that touch nothing but those paths.
  *
- * `undefined` means "cannot tell" — not "nothing happened". A rebase or squash
- * can leave the anchor unreachable, and a staleness prompt built on a guess is
- * worse than no prompt at all, so callers must stay silent in that case.
+ * `undefined` means "cannot tell" — not "nothing happened". The anchor must be
+ * an **ancestor** of HEAD for the range to mean anything: after a branch switch
+ * or a rebase the anchor can still exist while sitting on a divergent history,
+ * and `anchor..HEAD` would then list commits that have nothing to do with the
+ * status. Merely existing is not enough, so ask git for ancestry.
  */
 export async function commitsSince(
   root: string,
   anchor: string,
+  exclude: string[] = [],
   cap = 10,
 ): Promise<string[] | undefined> {
-  const reachable = await $`git -C ${root} cat-file -e ${`${anchor}^{commit}`}`.quiet().nothrow()
-  if (reachable.exitCode !== 0) return undefined
-  const log = await $`git -C ${root} log --format=%s ${`${anchor}..HEAD`}`.quiet().nothrow()
+  const ancestor = await $`git -C ${root} merge-base --is-ancestor ${anchor} HEAD`.quiet().nothrow()
+  if (ancestor.exitCode !== 0) return undefined
+  const range = `${anchor}..HEAD`
+  const paths = exclude.length ? [".", ...exclude.map((f) => `:(exclude)${f}`)] : []
+  const log = paths.length
+    ? await $`git -C ${root} log --format=%s ${range} -- ${paths}`.quiet().nothrow()
+    : await $`git -C ${root} log --format=%s ${range}`.quiet().nothrow()
   if (log.exitCode !== 0) return undefined
   const subjects = log.text().trim()
   return subjects ? subjects.split("\n").slice(0, cap) : []

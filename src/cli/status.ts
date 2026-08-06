@@ -2,7 +2,7 @@ import { mkdirSync } from "node:fs"
 import { join } from "node:path"
 import { parseArgs } from "node:util"
 import { commitsSince, headSha } from "../core/git.ts"
-import { applyStatusUpdate, readManifest, writeManifest } from "../core/manifest.ts"
+import { applyStatusUpdate, MANIFEST_FILE, readManifest, writeManifest } from "../core/manifest.ts"
 import { dataDir, writeAtomic } from "../core/paths.ts"
 import { findProject, projectForCwd, readRegistry } from "../core/registry.ts"
 import { stalenessPrompt } from "../core/staleness.ts"
@@ -60,7 +60,10 @@ async function runCheck(): Promise<number> {
 
   const [manifest, head] = await Promise.all([readManifest(project.path), headSha(project.path)])
   const anchor = manifest?.status?.commit
-  const since = anchor ? await commitsSince(project.path, anchor) : undefined
+  // The anchor is captured before the manifest is written, so committing
+  // itaca.yml afterwards moves HEAD past it. Left in, that commit would make
+  // every status update produce a prompt in the next session, about itself.
+  const since = anchor ? await commitsSince(project.path, anchor, [MANIFEST_FILE]) : undefined
   const prompt = stalenessPrompt(project.name, manifest?.status, head, since)
   if (!prompt) return EXIT.OK
 
