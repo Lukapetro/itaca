@@ -1,6 +1,6 @@
 import { type Dirent, readdirSync, statSync } from "node:fs"
 import { basename, join, resolve } from "node:path"
-import type { DetectorRule, Link, Project, Registry } from "../types.ts"
+import type { DetectedService, DetectorRule, Project, Registry } from "../types.ts"
 import { extractCommands } from "./commands.ts"
 import { detectServices, loadRules } from "./engine.ts"
 import { Evidence } from "./evidence.ts"
@@ -54,15 +54,64 @@ export function discoverProjects(root: string): string[] {
     .sort()
 }
 
-/** GitHub links derived from the git remote — the one builtin detector. */
-function githubLinks(remote: string | undefined): Link[] {
-  if (!remote?.startsWith("github.com/")) return []
-  const url = `https://${remote}`
-  return [
-    { title: "Repository", url },
-    { title: "Pull requests", url: `${url}/pulls` },
-    { title: "Actions", url: `${url}/actions` },
-  ]
+/**
+ * Azure DevOps remotes reach parseRemote in two shapes, normalized differently:
+ *   HTTPS → dev.azure.com/{org}/{project}/_git/{repo}
+ *   SSH   → ssh.dev.azure.com/v3/{org}/{project}/{repo}
+ * Both describe the same repo; the web UI only ever uses the HTTPS form.
+ */
+function parseAzureRemote(remote: string): AzureRepo | undefined {
+  const m =
+    remote.match(/^dev\.azure\.com\/([^/]+)\/([^/]+)\/_git\/([^/]+)$/) ??
+    remote.match(/^ssh\.dev\.azure\.com\/v3\/([^/]+)\/([^/]+)\/([^/]+)$/)
+  if (!m?.[1] || !m[2] || !m[3]) return undefined
+  return { org: m[1], project: m[2], repo: m[3] }
+}
+
+interface AzureRepo {
+  org: string
+  project: string
+  repo: string
+}
+
+/**
+ * The code-host service derived from the git remote — the builtin detectors.
+ * Rules in rules/ cannot express this: they match files and deps, not remotes.
+ */
+export function codeHostService(remote: string | undefined): DetectedService | undefined {
+  if (!remote) return undefined
+
+  if (remote.startsWith("github.com/")) {
+    const url = `https://${remote}`
+    return {
+      id: "github",
+      service: "GitHub",
+      category: "code",
+      links: [
+        { title: "Repository", url },
+        { title: "Pull requests", url: `${url}/pulls` },
+        { title: "Actions", url: `${url}/actions` },
+      ],
+    }
+  }
+
+  const azure = parseAzureRemote(remote)
+  if (azure) {
+    const project = `https://dev.azure.com/${azure.org}/${azure.project}`
+    const url = `${project}/_git/${azure.repo}`
+    return {
+      id: "azure-devops",
+      service: "Azure DevOps",
+      category: "code",
+      links: [
+        { title: "Repository", url },
+        { title: "Pull requests", url: `${url}/pullrequests` },
+        { title: "Pipelines", url: `${project}/_build` },
+      ],
+    }
+  }
+
+  return undefined
 }
 
 export async function scanProject(path: string, rules: DetectorRule[]): Promise<Project> {
@@ -76,10 +125,8 @@ export async function scanProject(path: string, rules: DetectorRule[]): Promise<
     detectWorkspaces(path, ev),
   ])
 
-  const gh = githubLinks(git?.remote)
-  if (gh.length) {
-    services.unshift({ id: "github", service: "GitHub", category: "code", links: gh })
-  }
+  const host = codeHostService(git?.remote)
+  if (host) services.unshift(host)
 
   let description = manifest?.description
   if (!description) {

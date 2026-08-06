@@ -29,8 +29,18 @@ machine.
 ## Updating status (end of a meaningful work session)
 
 Call \`project_status_update\` (or \`itaca status set <name> --note "..."\`)
-with a 1-2 line note of what changed and, if it moved, the phase/next.
-Skip it for trivial sessions. Never put secrets or env values in notes.
+with a short note covering three things:
+
+1. **What changed** — 1-2 lines.
+2. **What is blocked** — a red CI gate, a review that never ran, a dependency
+   you are waiting on. Say why, not just that.
+3. **What decision is still open** — anything you deliberately did not settle,
+   with the option you would pick.
+
+(2) and (3) matter most: a fresh session can reconstruct (1) from the git log,
+but nothing in the repo records a blocked PR or a choice left hanging. Update
+phase/next when they moved. Skip trivial sessions. Never put secrets or env
+values in notes.
 
 ## Rules
 
@@ -40,6 +50,7 @@ Skip it for trivial sessions. Never put secrets or env values in notes.
 `
 
 const HOOK_COMMAND = "itaca context 2>/dev/null || true"
+const STOP_HOOK_COMMAND = "itaca status check 2>/dev/null || true"
 
 const AGENTS_BLOCK = `<!-- itaca:begin -->
 ## Project registry
@@ -61,17 +72,34 @@ interface SettingsHooks {
   [key: string]: unknown
 }
 
-/** Add the SessionStart hook to Claude Code settings, idempotently. */
-export function upsertSessionStartHook(settings: SettingsHooks): SettingsHooks {
+/** Add one hook to Claude Code settings, idempotently, touching nothing else. */
+function upsertHook(
+  settings: SettingsHooks,
+  event: string,
+  command: string,
+  marker: string,
+): SettingsHooks {
   const hooks = settings.hooks ?? {}
-  const entries = hooks.SessionStart ?? []
-  const present = entries.some((e) => e.hooks?.some((h) => h.command?.includes("itaca context")))
-  if (!present) {
-    entries.push({ hooks: [{ type: "command", command: HOOK_COMMAND }] })
-  }
-  hooks.SessionStart = entries
+  const entries = hooks[event] ?? []
+  const present = entries.some((e) => e.hooks?.some((h) => h.command?.includes(marker)))
+  if (!present) entries.push({ hooks: [{ type: "command", command }] })
+  hooks[event] = entries
   settings.hooks = hooks
   return settings
+}
+
+/** Add the SessionStart hook to Claude Code settings, idempotently. */
+export function upsertSessionStartHook(settings: SettingsHooks): SettingsHooks {
+  return upsertHook(settings, "SessionStart", HOOK_COMMAND, "itaca context")
+}
+
+/**
+ * Add the Stop hook, idempotently. Symmetric to SessionStart: entry loads the
+ * status, exit checks it still describes the repo. Without this the update at
+ * session end depends on the agent remembering unprompted.
+ */
+export function upsertStopHook(settings: SettingsHooks): SettingsHooks {
+  return upsertHook(settings, "Stop", STOP_HOOK_COMMAND, "itaca status check")
 }
 
 export async function run(args: string[], json: boolean): Promise<number> {
@@ -98,17 +126,15 @@ export async function run(args: string[], json: boolean): Promise<number> {
       settings = (await Bun.file(settingsPath).json()) as SettingsHooks
     } catch {
       manual.push(
-        `~/.claude/settings.json is not valid JSON — add the SessionStart hook manually: ${HOOK_COMMAND}`,
+        `~/.claude/settings.json is not valid JSON — add the hooks manually: SessionStart "${HOOK_COMMAND}", Stop "${STOP_HOOK_COMMAND}"`,
       )
       settings = {}
     }
   }
   if (!manual.length) {
-    await writeAtomic(
-      settingsPath,
-      `${JSON.stringify(upsertSessionStartHook(settings), null, 2)}\n`,
-    )
-    done.push(`SessionStart hook → ${settingsPath}`)
+    const withHooks = upsertStopHook(upsertSessionStartHook(settings))
+    await writeAtomic(settingsPath, `${JSON.stringify(withHooks, null, 2)}\n`)
+    done.push(`SessionStart + Stop hooks → ${settingsPath}`)
   }
 
   // 3. MCP server registration via the claude CLI (user scope)
@@ -145,6 +171,10 @@ export async function run(args: string[], json: boolean): Promise<number> {
   }
   for (const d of done) console.log(`${green("✓")} ${d}`)
   for (const m of manual) console.log(`${yellow("→")} ${m}`)
-  console.log(dim("\nnew Claude Code sessions now start with the project briefing preloaded"))
+  console.log(
+    dim(
+      "\nnew Claude Code sessions now start with the project briefing preloaded,\nand are asked to refresh the status when the repo moved past it",
+    ),
+  )
   return EXIT.OK
 }

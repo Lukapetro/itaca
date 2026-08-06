@@ -82,7 +82,9 @@ Match primitives (v1): `file` (glob exists), `dep` (JS package dep), `env_key` (
 
 ### 6.2 Built-in detectors (v1 set)
 
-Chosen to cover the author's real repos (dogfood-first): **Neon, Convex, Cloudflare (wrangler), Stripe, Polar, Vercel, Supabase, GitHub (remote parsing → repo/PRs/actions links), Expo/EAS, PostHog, Sentry**. Plus stack detection: runtime (node/bun/deno), framework (next/astro/expo/godot…), package manager (from lockfile).
+Chosen to cover the author's real repos (dogfood-first): **Neon, Convex, Cloudflare (wrangler), Stripe, Polar, Vercel, Supabase, Expo/EAS, PostHog, Sentry**. Plus stack detection: runtime (node/bun/deno), framework (electron/next/astro/expo/godot…), package manager (from lockfile).
+
+Code hosts are the exception to §6.1: they are derived from the git remote, not from files or deps, so they live in `codeHostService` (`src/core/scan.ts`) rather than in `rules/`. Supported: **GitHub** (→ repo/PRs/actions) and **Azure DevOps** (→ repo/PRs/pipelines, both the HTTPS and `ssh.dev.azure.com/v3` remote shapes).
 
 ### 6.3 Commands extraction
 
@@ -105,6 +107,7 @@ itaca show   <project>              # full card for one project
 itaca context [--cwd <dir>]         # the agent briefing (see 9.1); ≤40 lines guaranteed
 itaca open   <project> [<link>]     # open dashboard link(s) in browser; no arg = pick list
 itaca status set <project> [--phase X] [--next Y] [--note Z]
+itaca status check                  # Stop hook: is the status still describing HEAD? (see 9.4)
 itaca init                          # write itaca.yml with inferred values (2 questions max)
 itaca rules  list|validate          # detector management
 itaca agent  install [--target claude-code]   # install skill + hooks + MCP registration + AGENTS.md block
@@ -137,6 +140,7 @@ status:
   phase: "beta — 12 pilot users"
   next: "ship supplier import; fix onboarding drop-off"
   updated: 2026-08-04
+  commit: 3ccb439…          # HEAD when the status was written; itaca-written, the freshness anchor (§9.4)
   log:                      # append-only, newest first, agent-written; cap 20 entries
     - { date: 2026-08-04, note: "Fixed Stripe webhook retries; deployed 1.4.2" }
 links:                      # manual additions; merged with detected links
@@ -197,7 +201,11 @@ Teaches the agent: at session start call `project_get` (or `itaca context`) inst
 
 Installed by `itaca agent install`:
 - **SessionStart**: runs `itaca context --cwd .` and injects the briefing. This is the 10×/day touchpoint.
-- **SessionEnd/Stop**: reminds/instructs the agent to call `project_status_update` if meaningful work happened (no-op on trivial sessions).
+- **Stop**: runs `itaca status check`. If the project's `status.commit` anchor no longer matches HEAD, it returns `{"decision": "block", "reason": …}` listing the commits that landed since, so the agent updates the status while it still remembers the session. Otherwise it prints nothing and the session ends.
+
+Without the Stop hook the end-of-session update depends on the agent remembering unprompted — the entry point is enforced by the machine and the exit point is not, and in practice the status goes stale. The check is deliberately conservative and stays **silent** whenever it cannot be sure: no anchor (status never written, or a manifest predating the field), no HEAD, or an anchor that is not an **ancestor** of HEAD — after a branch switch, rebase or squash the anchor can still exist while sitting on a divergent history, where the commit range means nothing. Commits touching only `itaca.yml` are excluded too: the anchor is taken before the manifest is written, so committing the status would otherwise make every update prompt about itself next session. It also prompts at most **once per session**, so a session with genuinely nothing to add is never trapped. A check that cries wolf gets switched off, and then it catches nothing.
+
+Its blind spot is inherent and worth stating: git sees only part of what makes a status stale. A blocked PR, a red review gate, a decision taken in conversation — none of them are commits. That is why the skill asks for *what is blocked* and *what decision is open*, not just what changed (§9.3).
 
 Concurrency: manifest writes are atomic (write-temp + rename); last-writer-wins with log append preserved (append is a merge, not overwrite).
 

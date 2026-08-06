@@ -21,6 +21,7 @@
         "phase": { "type": "string", "description": "Where the project is, e.g. 'beta — 12 pilot users'" },
         "next": { "type": "string", "description": "What's next, one line" },
         "updated": { "type": "string", "format": "date", "description": "Last status update (YYYY-MM-DD)" },
+        "commit": { "type": "string", "pattern": "^[0-9a-f]{7,40}$", "description": "HEAD when the status was written — written by itaca, not by hand" },
         "log": {
           "type": "array",
           "maxItems": 20,

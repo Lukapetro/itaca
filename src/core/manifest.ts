@@ -29,17 +29,23 @@ export async function writeManifest(root: string, manifest: Manifest): Promise<v
 
 const LOG_CAP = 20
 
-/** Merge a status update into a manifest (creating a minimal one if absent). */
+/**
+ * Merge a status update into a manifest (creating a minimal one if absent).
+ * `commit` anchors the status to the HEAD it describes, so a later session can
+ * tell whether the repo moved on without it (SPEC §9.4).
+ */
 export function applyStatusUpdate(
   existing: Manifest | undefined,
   update: { phase?: string; next?: string; note?: string },
   today: string,
+  commit?: string,
 ): Manifest {
   const manifest: Manifest = existing ?? { version: 1 }
   const status = manifest.status ?? {}
   if (update.phase !== undefined) status.phase = update.phase
   if (update.next !== undefined) status.next = update.next
   status.updated = today
+  if (commit !== undefined) status.commit = commit
   if (update.note !== undefined) {
     status.log = [{ date: today, note: update.note }, ...(status.log ?? [])].slice(0, LOG_CAP)
   }
