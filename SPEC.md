@@ -82,7 +82,9 @@ Match primitives (v1): `file` (glob exists), `dep` (JS package dep), `env_key` (
 
 ### 6.2 Built-in detectors (v1 set)
 
-Chosen to cover the author's real repos (dogfood-first): **Neon, Convex, Cloudflare (wrangler), Stripe, Polar, Vercel, Supabase, GitHub (remote parsing → repo/PRs/actions links), Expo/EAS, PostHog, Sentry**. Plus stack detection: runtime (node/bun/deno), framework (next/astro/expo/godot…), package manager (from lockfile).
+Chosen to cover the author's real repos (dogfood-first): **Neon, Convex, Cloudflare (wrangler), Stripe, Polar, Vercel, Supabase, Expo/EAS, PostHog, Sentry**. Plus stack detection: runtime (node/bun/deno), framework (electron/next/astro/expo/godot…), package manager (from lockfile).
+
+Code hosts are the exception to §6.1: they are derived from the git remote, not from files or deps, so they live in `codeHostService` (`src/core/scan.ts`) rather than in `rules/`. Supported: **GitHub** (→ repo/PRs/actions) and **Azure DevOps** (→ repo/PRs/pipelines, both the HTTPS and `ssh.dev.azure.com/v3` remote shapes).
 
 ### 6.3 Commands extraction
 

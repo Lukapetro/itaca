@@ -3,9 +3,30 @@ import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { Evidence } from "../src/core/evidence.ts"
-import { detectWorkspaces, resolveMembers } from "../src/core/stack.ts"
+import { detectStack, detectWorkspaces, resolveMembers } from "../src/core/stack.ts"
 
 const TURBO_FIXTURE = join(import.meta.dir, "fixtures", "turbo-monorepo")
+
+function repoWithDeps(deps: Record<string, string>, dev: Record<string, string> = {}): string {
+  const repo = mkdtempSync(join(tmpdir(), "itaca-stack-"))
+  writeFileSync(
+    join(repo, "package.json"),
+    JSON.stringify({ name: "x", dependencies: deps, devDependencies: dev }),
+  )
+  return repo
+}
+
+describe("framework detection (dogfooding: toru was reported as vite)", () => {
+  test("Electron wins over the renderer framework it bundles", async () => {
+    const repo = repoWithDeps({ react: "19" }, { electron: "34", vite: "6" })
+    expect((await detectStack(new Evidence(repo))).framework).toBe("electron")
+  })
+
+  test("Electron does not shadow frameworks in repos that lack it", async () => {
+    const repo = repoWithDeps({ vite: "6" })
+    expect((await detectStack(new Evidence(repo))).framework).toBe("vite")
+  })
+})
 
 describe("workspace resolution (bugbot findings)", () => {
   test("negated patterns exclude members (npm/pnpm semantics)", () => {

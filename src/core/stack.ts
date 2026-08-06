@@ -3,6 +3,9 @@ import type { ProjectStack } from "../types.ts"
 import type { Evidence } from "./evidence.ts"
 
 const FRAMEWORK_DEPS: [string, string][] = [
+  // The shell wins over the renderer framework: an Electron app bundling Vite
+  // or Next is a desktop app first — that is what decides how it runs and ships.
+  ["electron", "electron"],
   ["next", "next"],
   ["astro", "astro"],
   ["expo", "expo"],
