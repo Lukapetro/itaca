@@ -107,6 +107,7 @@ itaca show   <project>              # full card for one project
 itaca context [--cwd <dir>]         # the agent briefing (see 9.1); ≤40 lines guaranteed
 itaca open   <project> [<link>]     # open dashboard link(s) in browser; no arg = pick list
 itaca status set <project> [--phase X] [--next Y] [--note Z]
+itaca status check                  # Stop hook: is the status still describing HEAD? (see 9.4)
 itaca init                          # write itaca.yml with inferred values (2 questions max)
 itaca rules  list|validate          # detector management
 itaca agent  install [--target claude-code]   # install skill + hooks + MCP registration + AGENTS.md block
@@ -139,6 +140,7 @@ status:
   phase: "beta — 12 pilot users"
   next: "ship supplier import; fix onboarding drop-off"
   updated: 2026-08-04
+  commit: 3ccb439…          # HEAD when the status was written; itaca-written, the freshness anchor (§9.4)
   log:                      # append-only, newest first, agent-written; cap 20 entries
     - { date: 2026-08-04, note: "Fixed Stripe webhook retries; deployed 1.4.2" }
 links:                      # manual additions; merged with detected links
@@ -199,7 +201,11 @@ Teaches the agent: at session start call `project_get` (or `itaca context`) inst
 
 Installed by `itaca agent install`:
 - **SessionStart**: runs `itaca context --cwd .` and injects the briefing. This is the 10×/day touchpoint.
-- **SessionEnd/Stop**: reminds/instructs the agent to call `project_status_update` if meaningful work happened (no-op on trivial sessions).
+- **Stop**: runs `itaca status check`. If the project's `status.commit` anchor no longer matches HEAD, it returns `{"decision": "block", "reason": …}` listing the commits that landed since, so the agent updates the status while it still remembers the session. Otherwise it prints nothing and the session ends.
+
+Without the Stop hook the end-of-session update depends on the agent remembering unprompted — the entry point is enforced by the machine and the exit point is not, and in practice the status goes stale. The check is deliberately conservative and stays **silent** whenever it cannot be sure: no anchor (status never written, or a manifest predating the field), no HEAD, or an anchor made unreachable by a rebase or squash. It also prompts at most **once per session**, so a session with genuinely nothing to add is never trapped. A check that cries wolf gets switched off, and then it catches nothing.
+
+Its blind spot is inherent and worth stating: git sees only part of what makes a status stale. A blocked PR, a red review gate, a decision taken in conversation — none of them are commits. That is why the skill asks for *what is blocked* and *what decision is open*, not just what changed (§9.3).
 
 Concurrency: manifest writes are atomic (write-temp + rename); last-writer-wins with log append preserved (append is a merge, not overwrite).
 

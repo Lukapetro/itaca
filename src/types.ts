@@ -57,6 +57,8 @@ export interface ManifestStatus {
   phase?: string
   next?: string
   updated?: string
+  /** HEAD when the status was written — the anchor `itaca status check` compares against. */
+  commit?: string
   log?: StatusLogEntry[]
 }
 

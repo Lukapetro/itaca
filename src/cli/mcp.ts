@@ -3,6 +3,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod"
 import pkg from "../../package.json"
 import { briefing } from "../core/briefing.ts"
+import { headSha } from "../core/git.ts"
 import { applyStatusUpdate, readManifest, writeManifest } from "../core/manifest.ts"
 import { findProject, readRegistry } from "../core/registry.ts"
 import { EXIT } from "../types.ts"
@@ -83,14 +84,19 @@ export function buildServer(): McpServer {
         return errorText("Nothing to update — pass phase, next, or note.")
       }
       const today = new Date().toISOString().slice(0, 10)
+      const [existing, head] = await Promise.all([
+        readManifest(project.path),
+        headSha(project.path),
+      ])
       const manifest = applyStatusUpdate(
-        await readManifest(project.path),
+        existing,
         {
           ...(phase !== undefined ? { phase } : {}),
           ...(next !== undefined ? { next } : {}),
           ...(note !== undefined ? { note } : {}),
         },
         today,
+        head,
       )
       await writeManifest(project.path, manifest)
       return text(`Updated ${project.name} (itaca.yml). Status: ${manifest.status?.phase ?? "—"}`)
